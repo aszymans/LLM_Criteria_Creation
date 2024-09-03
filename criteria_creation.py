@@ -11,18 +11,18 @@ def generate_prompt_only(instruction, model="gpt-4o"):
     completion = openai.ChatCompletion.create(
         model=model,
         messages=[
-            {"role": "system", "content": "You are a helpful and precise assistant that can create binary evaluation criteria for a given user instruction. Your task is to generate evaluation criteria for assessing a large language model's performance. You should return your final answer as a valid JSON object."},
+            {"role": "system", "content": "You are a helpful and precise assistant that can create binary evaluation criteria for a given user instruction. Your task is to generate evaluation criteria for assessing a large language model's performance. Each criterion should be a statement in which you would answer true/false. The criteria should not be in the form of a question. You should return your final answer as a valid JSON object."},
             {"role": "user", "content": "Create evaluation criteria for the given prompt instruction.\n" + instruction}
         ]
     )
     return completion.choices[0].message.content
 
-def generate_prompt_and_output(instruction, output1, output2, output3, model="gpt-4o"):
+def generate_prompt_and_output(instruction, evaluation_criteria, output1, output2, output3, model="gpt-4o"):
     completion = openai.ChatCompletion.create(
         model=model,
         messages=[
-            {"role": "system", "content": "You are a helpful and precise assistant that can create binary evaluation criteria for a given user instruction and set out outputs. Your task is to generate evaluation criteria for assessing a large language model's performance. You should return your final answer as a valid JSON object."},
-            {"role": "user", "content": f"Create evaluation criteria for the given prompt instruction and three assistant outputs.\n{instruction}\n[The Start of Assistant 1’s Response] {output1} [The End of Assistant 1’s Response]\n[The Start of Assistant 2’s Response] {output2} [The End of Assistant 2’s Response]\n[The Start of Assistant 3’s Response] {output3} [The End of Assistant 3’s Response]"}
+            {"role": "system", "content": "You are a helpful and precise assistant that can refine and create new binary evaluation criteria for a given user instruction and set out outputs. Your task is to generate evaluation criteria for assessing a large language model's performance. Each criterion should be a statement in which you would answer true/false. The criteria should not be in the form of a question. You should return your final answer as a valid JSON object."},
+            {"role": "user", "content": f"Consider the initial evaluation criteria \n{evaluation_criteria}\n. After reviewing the outputs attached, either refine the intial criteria or create new evaluation criteria for the given prompt instruction and three outputs.\n{instruction}\n[The Start of Assistant 1’s Response] {output1} [The End of Assistant 1’s Response]\n[The Start of Assistant 2’s Response] {output2} [The End of Assistant 2’s Response]\n[The Start of Assistant 3’s Response] {output3} [The End of Assistant 3’s Response]"}
         ]
     )
     return completion.choices[0].message.content
@@ -45,14 +45,14 @@ def main():
 
             # Generate outputs using both functions
             prompt_only_output = generate_prompt_only(prompt, model=model)
-            prompt_and_output = generate_prompt_and_output(prompt, output1, output2, output3, model=model)
+            prompt_and_output = generate_prompt_and_output(prompt, prompt_only_output, output1, output2, output3, model=model)
 
             # Add the results back into the DataFrame
             df.at[index, f'{model}_Output'] = prompt_only_output
             df.at[index, f'{model}_Prompt_and_Output'] = prompt_and_output
 
         # Save the results to a new Excel file
-        output_file_path = 'LLM_criteria_nutrition.xlsx'
+        output_file_path = 'LLM_criteria_nutrition3.xlsx'
         df.to_excel(output_file_path, index=False)
         return output_file_path
     else:
